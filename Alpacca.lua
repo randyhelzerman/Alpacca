@@ -491,7 +491,6 @@ function Alpacca.__div (lhs,rhs)
 	    succeed, s,p,a  = lhs:pass(s,p,f)
 	    if succeed then
 	       self:fireEvent("LHS",l,s,p,f,a)
-	       --	       print("divLevel=" .. f.divLevel .. " bt:1")
 	       return succeed,s,p, self:fireEvent("RTN",l,s,p,f)
 	    end
 	 end
@@ -500,11 +499,9 @@ function Alpacca.__div (lhs,rhs)
 	    succeed,s,p,a = rhs:pass(s,p,f)
 	    if succeed then
 	       self:fireEvent("RHS",l,s,p,f,a)
---	       print("divLevel=" .. f.divLevel .. " bt:2")
 	       return succeed,s,p, self:fireEvent("RTN",l,s,p,f)
 	    end
 	 end
----	 print("divLevel=" .. f.divLevel .. " bt:3")
 	 
 	 self:fireEvent("FAIL",l,s,p,f)
 	 return false,s,p 
@@ -644,8 +641,8 @@ function Alpacca.parseTreeGenerator(rtn)
       -- non-operators go straight to output stack
       if not tokenParser.isOperator then
 	 self:pushTokenStack(entry)
-	 self:dumpEntry(entry)
-	 print("r1")
+	 --self:dumpEntry(entry)
+	 --print("r1")
 	 return
       end
       
@@ -653,8 +650,8 @@ function Alpacca.parseTreeGenerator(rtn)
       -- goes directly to the operand stack
       if self:isOperatorStackEmpty() then
 	 self:pushOperatorStack(entry)
-	 self:dumpEntry(entry)
-	 print("r2")
+	 --self:dumpEntry(entry)
+	 --print("r2")
 	 return
       end
       
@@ -672,8 +669,8 @@ function Alpacca.parseTreeGenerator(rtn)
 	 if not self:isOperatorStackEmpty() then
 	    self:popOperatorStack() -- get rid of lparen
 	 end
-	 self:dumpEntry(entry)
-	 print("r4")
+	 --self:dumpEntry(entry)
+	 --print("r4")
 	 return
       end
       
@@ -684,8 +681,8 @@ function Alpacca.parseTreeGenerator(rtn)
 	     or
 	  entry.parser.isOpenParen) then
 	 self:pushOperatorStack(entry)
-	 self:dumpEntry(entry)
-	 print("r3")
+	 --self:dumpEntry(entry)
+	 --print("r3")
 	 return
       end
       
@@ -695,8 +692,8 @@ function Alpacca.parseTreeGenerator(rtn)
       if(entry.parser.precedence
 	 > self:topOperatorStack().parser.precedence) then
 	 self:pushOperatorStack(entry)
-	 self:dumpEntry(entry)
-	 print("r5")
+	 --self:dumpEntry(entry)
+	 --print("r5")
 	 return
       end
       
@@ -714,7 +711,7 @@ function Alpacca.parseTreeGenerator(rtn)
 	       self:popOperatorStack()
 	       self:pushOperatorStack(entry)
 	       self:dumpEntry(entry)
-	       print("r6")
+	       --print("r6")
 	       return
 	    end
       
@@ -723,7 +720,7 @@ function Alpacca.parseTreeGenerator(rtn)
 	    if "left" ==entry.parser.assoc then
 	       self:pushOperatorStack(entry)
 	       self:dumpEntry(entry)
-	       print("r6")
+	       --print("r7")
 	       return
 	    end
       end
@@ -740,7 +737,6 @@ function Alpacca.parseTreeGenerator(rtn)
    end
    
    function returner:createParseTreeFromStack()
-      print("assembling parse tree")
       for i,entry in ipairs(self.tokenStack) do
 	 if not entry.parser.isOperator then
 	    local node = {
@@ -752,8 +748,7 @@ function Alpacca.parseTreeGenerator(rtn)
 	    local node = {
 	       op = entry.token
 	    }
-	    print("pulled op")
-	    Alpacca:printParseTree(node)
+	    --Alpacca:printParseTree(node)
 	    for a = 1,entry.parser.arity do
 	       local arg = self:topOperatorStack()
 	       self:popOperatorStack()
@@ -790,11 +785,10 @@ function Alpacca.parseTreeGenerator(rtn)
    
    function returner:RTN(l,s,p,parser,walker)
       if parser.isToken then
-	 print("rtn token: " .. string.sub(s,l.saveP,p-1))
 	 self:handleToken(string.sub(s,l.saveP,p-1),parser)
       end
       
-      if parser.installedAction == self then 
+      if parser.installedAction == self then
 	 self.entCount = self.entCount - 1
 	 
 	 if 0 < self.entCount then return end
@@ -821,209 +815,6 @@ function Alpacca.parseTreeGenerator(rtn)
    
    return returner
 end
-
-
-function Alpacca:parseTreeTokenAction ()
-   local returner = {}
-   
-   returner.name = "parseTreeTokenAction"
-   
-   function returner:ENT(l,s,p,parser)
-      l.saveP = p
-   end
-   
-   function returner:RTN(l,s,p,parser)
-      local r = {}
-      r.op = "token"
-      r.value = string.sub(s,l.saveP,p-1)
-      
-      return r
-   end
-   
-   return returner
-end
-
-function Alpacca:parseTreeSeqAction ()
-   local returner={}
-   
-   returner.name = "parseTreePowAction"
-   
-   function returner:LHS(l,s,p,parser,a)
-      l.lhs = a
-   end
-   
-   function returner:RHS(l,s,p,parser,a)
-      l.rhs = a
-   end
-   
-   function returner:RTN(l,s,p,parser)
-      local r = {}
-      r.op = "seq"
-      r.lhs = l.lhs
-      r.rhs = l.rhs
-      return r
-   end
-   
-   return returner
-end
-
-function Alpacca:parseTreePowAction ()
-   local returner={}
-   
-   returner.name = "parseTreePowAction"
-   
-   function returner:LHS(l,s,p,parser,a)
-      l.lhs = a
-   end
-   
-   function returner:RHS(l,s,p,parser,a)
-      l.rhs = a
-   end
-   
-   function returner:RTN(l,s,p,parser)
-      local r = {}
-      r.op = "^"
-      r.lhs = l.lhs
-      r.rhs = l.rhs
-      return r
-   end
-   
-   return returner
-end
-
-function Alpacca:parseTreePlusAction ()
-   local returner={}
-   
-   returner.name = "parseTreePlusAction"
-   
-   function returner:LHS(l,s,p,parser,a)
-      if not l.lhs then
-	 l.lhs = {}
-	 l.lhs.op = "+"
-	 l.lhs.kids = {}
-	 l.i = 0
-      end
-      l.i = l.i+1
-      l.lhs.kids[l.i] = a
-   end
-   
-   function returner:RHS(l,s,p,parser,a)
-      l.rhs = a
-   end
-   
-   function returner:RTN(l,s,p,parser)
-      local r = {}
-      r.op = "plus"
-      r.lhs = l.lhs
-      r.rhs = l.rhs
-      return r
-   end
-   
-   return returner
-end
-
-function Alpacca:parseTreeStarAction ()
-   local returner={}
-   
-   returner.name = "parseTreeStarAction"
-   
-   function returner:LHS(l,s,p,parser,a)
-      if not l.lhs then
-	 l.lhs = {}
-	 l.lhs.op = "*"
-	 l.lhs.kids = {}
-	 l.i = 0
-      end
-      l.i = l.i+1
-      l.lhs.kids[l.i] = a
-   end
-   
-   function returner:RHS(l,s,p,parser,a)
-      l.rhs = a
-   end
-   
-   function returner:RTN(l,s,p,parser)
-      local r = {}
-      r.op = "star"
-      r.lhs = l.lhs
-      r.rhs = l.rhs
-      return r
-   end
-   
-   return returner
-end
-
-function Alpacca:parseTreeDivAction ()
-   local returner={}
-   
-   returner.name = "parseTreeDivAction"
-   
-   function returner:LHS(l,s,p,parser,a)
-      l.lhs = a
-   end
-   
-   function returner:RHS(l,s,p,parser,a)
-      l.rhs = a
-   end
-   
-   function returner:RTN(l,s,p,parser)
-      if l.lhs then return l.lhs end
-      if l.rhs then return l.rhs end
-   end
-   
-   return returner
-end
-
-
-
-function Alpacca:parseTreeAction ()
-   local returner = {}
-
-   returner.name = "parseTreeAction"
-   
-   function returner:install(parser)
-      --install the apropos action
-      if parser.isToken then
-	 parser.action = Alpacca:parseTreeTokenAction()
-	 return
-      end
-      
-      if "seq"==parser.op then
-	 parser.action = Alpacca:parseTreeSeqAction()
-      end
-      
-      if "pow"==parser.op then
-	 parser.action = Alpacca:parseTreePowAction()
-      end
-      
-      if "plus"==parser.op then
-	 parser.action = Alpacca:parseTreePlusAction()
-      end
-      
-      if "star"==parser.op then
-	 parser.action = Alpacca:parseTreeStarAction()
-      end
-      
-      if "div"==parser.op then
-	 parser.action = Alpacca:parseTreeDivAction()
-      end
-   
-   
-      -- recurse
-      
-      if parser.lhs then
-	 self:install(parser.lhs)
-      end
-      
-      if parser.rhs then
-	 self:install(parser.rhs)
-      end
-      
-   end
-
-   return returner
-end
-
 
 
 -- captures and back references
@@ -1254,7 +1045,7 @@ end
 
 function Alpacca:parse(s,d)
    -- first pass
-   print("first pass")
+   --print("first pass")
    
    self:calculateOperatorPrecedence()
    
@@ -1269,15 +1060,12 @@ function Alpacca:parse(s,d)
    end
    
    -- second pass
-   print("second pass")
+   --print("second pass")
    
    branchCache:rewindCache()
-   
    self:walkParser(self.turnOnActions)
    local actionPassWalker = ActionPassWalker(branchCache)
-   
    local succeed,s,p,a = self:pass(s,d,actionPassWalker)
-   
    return succeed,s,p,a
 end
 
@@ -1292,7 +1080,6 @@ local any   =  Alpacca.anyChar
 local alphaNumeric =  Alpacca.alphaNumericChar
 
 --actions
-local pta = Alpacca:parseTreeAction()
 local ptg = Alpacca:parseTreeGenerator()
 local cap = Alpacca.capture
 
